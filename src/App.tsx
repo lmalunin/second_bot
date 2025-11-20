@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TelegramWebApp } from "./telegram";
 import { Controller, useForm } from "react-hook-form";
-import "./App.css";
+import "./App.scss";
 
 type FormValues = {
   firstName: string;
