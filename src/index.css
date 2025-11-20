@@ -1,0 +1,35 @@
+:root {
+  font-family: "Inter", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  font-weight: 400;
+  font-variation-settings: "opsz" 14;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --tg-bg: #f4f4f5;
+  --tg-surface: #ffffff;
+  --tg-text: #0f172a;
+  --tg-muted: #64748b;
+  --tg-accent: #2563eb;
+  --tg-accent-text: #ffffff;
+  --tg-border: rgba(15, 23, 42, 0.08);
+  --tg-radius: 18px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+}
+
+#root {
+  min-height: 100vh;
+}
