@@ -22,74 +22,8 @@ type TelegramWindow = Window &
     };
   };
 
-function WelcomePage({
-  firstName,
-  lastName,
-  debugLogs,
-  setDebugLogs,
-  showDebug,
-  setShowDebug,
-  isTelegramEnvironment,
-}: {
-  firstName: string;
-  lastName: string;
-  debugLogs: string[];
-  setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
-  showDebug: boolean;
-  setShowDebug: React.Dispatch<React.SetStateAction<boolean>>;
-  isTelegramEnvironment: boolean;
-}) {
-  return (
-    <main className="app">
-      <div className="card welcome-card">
-        <h1>
-          Привет, {firstName} {lastName}!
-        </h1>
-        <p className="welcome-message">
-          Регистрация успешно завершена. Ваши данные сохранены.
-        </p>
-      </div>
-
-      {/* Панель отладки на странице приветствия */}
-      {isTelegramEnvironment && (
-        <div className="debug-panel">
-          <button
-            type="button"
-            onClick={() => setShowDebug(!showDebug)}
-            className="debug-toggle"
-          >
-            {showDebug ? "🔽 Скрыть логи" : "🔼 Показать логи"}
-          </button>
-          {showDebug && (
-            <div className="debug-logs">
-              <div className="debug-header">
-                <strong>Логи отладки:</strong>
-                <button
-                  type="button"
-                  onClick={() => setDebugLogs([])}
-                  className="debug-clear"
-                >
-                  Очистить
-                </button>
-              </div>
-              {debugLogs.length === 0 ? (
-                <p className="debug-empty">Логи пусты</p>
-              ) : (
-                <div className="debug-content">
-                  {debugLogs.map((log, idx) => (
-                    <div key={idx} className="debug-log-line">
-                      {log}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </main>
-  );
-}
+// WelcomePage больше не нужен - WebApp закрывается после отправки,
+// приветствие приходит от бота в чат
 
 function RegistrationForm({
   onSubmit,
@@ -266,10 +200,7 @@ function App() {
     "idle"
   );
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [registeredUser, setRegisteredUser] = useState<{
-    firstName: string;
-    lastName: string;
-  } | null>(null);
+  // Убрали registeredUser, так как WebApp закрывается после отправки
   // Панель отладки для просмотра логов в Telegram WebApp
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
@@ -328,29 +259,26 @@ function App() {
           addDebugLog("🚀 Вызов sendData()...");
           telegramApp.sendData(dataString);
           addDebugLog("✅ sendData() вызван успешно!");
-          addDebugLog("⏳ Ожидание обработки ботом (1 сек)...");
+          addDebugLog("⏳ Закрытие WebApp для доставки данных боту...");
+
+          // Закрываем WebApp, чтобы данные точно дошли до бота
+          // Бот получит данные, сохранит в db.json и отправит приветствие в чат
+          setTimeout(() => {
+            addDebugLog("🔒 Закрытие WebApp...");
+            telegramApp.close();
+          }, 500); // Небольшая задержка перед закрытием
+
+          // Показываем сообщение пользователю перед закрытием
+          setStatus("sent");
+          setStatusMessage(
+            "Данные отправлены! WebApp закроется через мгновение..."
+          );
         } catch (sendError) {
           const errorMsg = `❌ Ошибка при вызове sendData(): ${sendError}`;
           addDebugLog(errorMsg);
           console.error("Error calling sendData():", sendError);
           throw sendError;
         }
-
-        // Небольшая задержка для обработки на стороне Telegram/бота
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        addDebugLog("⏱️ Задержка завершена");
-
-        // После отправки данных через sendData(), бот получит их,
-        // сохранит в db.json и отправит подтверждение в чат
-        // Показываем страницу приветствия только после успешной отправки
-        addDebugLog(
-          `👋 Показ страницы приветствия для: ${values.firstName} ${values.lastName}`
-        );
-        setRegisteredUser({
-          firstName: values.firstName,
-          lastName: values.lastName,
-        });
-        setStatus("sent");
       } else {
         // Фолбэк для тестирования вне Telegram
         console.log("Form payload (not in Telegram):", payload);
@@ -370,22 +298,8 @@ function App() {
     }
   });
 
-  // Если пользователь зарегистрирован, показываем страницу приветствия
-  if (registeredUser) {
-    return (
-      <WelcomePage
-        firstName={registeredUser.firstName}
-        lastName={registeredUser.lastName}
-        debugLogs={debugLogs}
-        setDebugLogs={setDebugLogs}
-        showDebug={showDebug}
-        setShowDebug={setShowDebug}
-        isTelegramEnvironment={isTelegramEnvironment}
-      />
-    );
-  }
-
-  // Иначе показываем форму регистрации
+  // Показываем форму регистрации
+  // После отправки WebApp закроется, и бот отправит приветствие в чат
   return (
     <RegistrationForm
       onSubmit={onSubmit}
