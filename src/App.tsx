@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { TelegramWindow, FormValues } from "./types";
 import { RegistrationForm } from "./components/RegistrationForm";
@@ -19,16 +19,33 @@ function App() {
     [telegramApp]
   ); */
 
+  // Стабилизируем addDebugLog (добавьте это перед useMemo для clientConfig)
+  const addDebugLog = useCallback((message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
+    console.log(message); // Для fallback в обычном браузере
+  }, []); // Нет deps, так как timestamp динамичный, но setDebugLogs стабилен
+
+  // Теперь чистый useMemo без side-effects
   const clientConfig = useMemo(() => {
     const rawStartParam = telegramApp?.initDataUnsafe?.start_param ?? null;
-    //const fallbackParam = urlParams.get("tgWebAppStartParam") ?? null; // Из URL
-    addDebugLog(`🔍 Raw start_param: "${rawStartParam}" (initDataUnsafe)`);
-    // addDebugLog(
-    //   `🔍 Fallback tgWebAppStartParam: "${fallbackParam}" (from URL)`
-    // );
-    const paramToUse = rawStartParam; //|| fallbackParam; // Fallback, если initDataUnsafe глючит
+    const fallbackParam = urlParams.get("tgWebAppStartParam") ?? null;
+    const paramToUse = rawStartParam || fallbackParam;
     return decodeStartParam(paramToUse);
-  }, [telegramApp]);
+  }, [telegramApp, urlParams]); // Добавили urlParams в deps
+
+  // Отдельный useEffect для логов (сработает после рендера, когда telegramApp готов)
+  useEffect(() => {
+    if (telegramApp) {
+      const rawStartParam = telegramApp.initDataUnsafe?.start_param ?? null;
+      const fallbackParam = urlParams.get("tgWebAppStartParam") ?? null;
+      addDebugLog(`🔍 Raw start_param: "${rawStartParam}" (initDataUnsafe)`);
+      addDebugLog(
+        `🔍 Fallback tgWebAppStartParam: "${fallbackParam}" (from URL)`
+      );
+      addDebugLog(`🔧 clientConfig: ${JSON.stringify(clientConfig)}`); // ← Дополнительный лог для проверки возврата
+    }
+  }, [telegramApp, urlParams, addDebugLog, clientConfig]); // clientConfig в deps, чтобы лог обновлялся при изменении
 
   const messageApiUrl = clientConfig.backend ?? "";
 
@@ -83,11 +100,11 @@ function App() {
   }, [telegramApp]);
 
   // Функция для добавления логов в панель отладки
-  const addDebugLog = (message: string) => {
+  /*   const addDebugLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
     //console.log(message); // Также в консоль для обычных браузеров
-  };
+  }; */
 
   const onSubmit = handleSubmit(async (values) => {
     setStatus("sending");
