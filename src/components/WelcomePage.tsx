@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { WelcomePageProps } from "../types";
 import { DebugPanel } from "./DebugPanel";
 
@@ -19,6 +19,11 @@ export function WelcomePage({
   const [messageStatusText, setMessageStatusText] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    const urlLog = `🔗 messageApiUrl: ${messageApiUrl}`;
+    setDebugLogs((prev) => [...prev, urlLog]);
+  }, [messageApiUrl, setDebugLogs]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
